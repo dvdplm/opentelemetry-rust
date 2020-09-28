@@ -4,6 +4,7 @@
 //! has been set. It is also useful for testing purposes as it is intended
 //! to have minimal resource utilization and runtime impact.
 use crate::{api, exporter};
+use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -106,13 +107,17 @@ impl api::Tracer for NoopTracer {
     }
 
     /// Starts a new `NoopSpan`.
-    fn start_from_context(&self, _name: &str, _context: &api::Context) -> Self::Span {
+    fn start_from_context<'a, S>(&self, _name: S, _context: &api::Context) -> Self::Span
+        where S: Into<Cow<'a, str>>
+    {
         self.invalid()
     }
 
     /// Starts a SpanBuilder
-    fn span_builder(&self, name: &str) -> api::SpanBuilder {
-        api::SpanBuilder::from_name(name.to_string())
+    fn span_builder<'a, S>(&self, name: S) -> api::SpanBuilder
+        where S: Into<Cow<'a, str>>
+    {
+        api::SpanBuilder::from_name(name.into().into_owned())
     }
 
     /// Builds a `NoopSpan` from a `SpanBuilder`

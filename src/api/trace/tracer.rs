@@ -153,6 +153,7 @@ use crate::api::{
 use crate::sdk;
 use std::fmt;
 use std::time::SystemTime;
+use std::borrow::Cow;
 
 /// Interface for constructing `Span`s.
 pub trait Tracer: fmt::Debug + 'static {
@@ -186,7 +187,10 @@ pub trait Tracer: fmt::Debug + 'static {
     /// created in another process. Each propagators' deserialization must set
     /// `is_remote` to true on a parent `SpanContext` so `Span` creation knows if the
     /// parent is remote.
-    fn start(&self, name: &str) -> Self::Span {
+    fn start<'a, S>(&self, name: S) -> Self::Span
+    where
+        S: Into<Cow<'a, str>>
+    {
         self.start_from_context(name, &Context::current())
     }
 
@@ -213,12 +217,12 @@ pub trait Tracer: fmt::Debug + 'static {
     /// created in another process. Each propagators' deserialization must set
     /// `is_remote` to true on a parent `SpanContext` so `Span` creation knows if the
     /// parent is remote.
-    fn start_from_context(&self, name: &str, context: &Context) -> Self::Span;
+    fn start_from_context<'a, S>(&self, name: S, context: &Context) -> Self::Span where S: Into<Cow<'a, str>>;
 
     /// Creates a span builder
     ///
     /// An ergonomic way for attributes to be configured before the `Span` is started.
-    fn span_builder(&self, name: &str) -> SpanBuilder;
+    fn span_builder<'a, S>(&self, name: S) -> SpanBuilder where S: Into<Cow<'a, str>>;
 
     /// Create a span from a `SpanBuilder`
     fn build(&self, builder: SpanBuilder) -> Self::Span {

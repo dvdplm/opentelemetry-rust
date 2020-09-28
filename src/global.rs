@@ -67,6 +67,7 @@
 //! [`trace_provider`]: fn.trace_provider.html
 //! [trait objects]: https://doc.rust-lang.org/reference/types/trait-object.html#trait-objects
 use crate::{api, api::Provider};
+use std::borrow::Cow;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
@@ -158,15 +159,23 @@ impl api::Tracer for BoxedTracer {
     /// trace. A span is said to be a _root span_ if it does not have a parent. Each
     /// trace includes a single root span, which is the shared ancestor of all other
     /// spans in the trace.
-    fn start_from_context(&self, name: &str, cx: &api::Context) -> Self::Span {
-        BoxedSpan(self.0.start_with_context_boxed(name, cx))
+    // TODO: the `self.0.start_with…` call seems to take a `'static str` here – is that necessary?
+    fn start_from_context<'a, S>(&self, name: S, cx: &api::Context) -> Self::Span
+    where
+        S: Into<Cow<'a, str>>
+    {
+        BoxedSpan(self.0.start_with_context_boxed(name.into().as_ref(), cx))
     }
 
     /// Creates a span builder
     ///
     /// An ergonomic way for attributes to be configured before the `Span` is started.
-    fn span_builder(&self, name: &str) -> api::SpanBuilder {
-        api::SpanBuilder::from_name(name.to_string())
+    fn span_builder<'a, S>(&self, name: S) -> api::SpanBuilder
+    where
+    S: Into<Cow<'a, str>>
+    {
+        // TODO: this should work with a `Cow::Owned`
+        api::SpanBuilder::from_name(name.into().into_owned())
     }
 
     /// Create a span from a `SpanBuilder`

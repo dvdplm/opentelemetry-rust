@@ -10,6 +10,7 @@
 use crate::api::TraceContextExt;
 use crate::sdk;
 use crate::{api, api::context::Context, exporter};
+use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -103,7 +104,9 @@ impl api::Tracer for Tracer {
     /// trace. A span is said to be a _root span_ if it does not have a parent. Each
     /// trace includes a single root span, which is the shared ancestor of all other
     /// spans in the trace.
-    fn start_from_context(&self, name: &str, cx: &Context) -> Self::Span {
+    fn start_from_context<'a, S>(&self, name: S, cx: &Context) -> Self::Span
+        where S: Into<Cow<'a, str>>
+    {
         let builder = self.span_builder(name);
 
         self.build_with_context(builder, cx)
@@ -112,8 +115,10 @@ impl api::Tracer for Tracer {
     /// Creates a span builder
     ///
     /// An ergonomic way for attributes to be configured before the `Span` is started.
-    fn span_builder(&self, name: &str) -> api::SpanBuilder {
-        api::SpanBuilder::from_name(name.to_string())
+    fn span_builder<'a, S>(&self, name: S) -> api::SpanBuilder
+        where S: Into<Cow<'a, str>>
+    {
+        api::SpanBuilder::from_name(name.into().into_owned())
     }
 
     /// Starts a span from a `SpanBuilder`.
